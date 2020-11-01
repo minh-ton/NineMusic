@@ -167,17 +167,11 @@ void loadprefs() {
 
 %hook MediaControlsTimeControl
 - (void)layoutSubviews {
-    MRPlatterViewController *controller = (MRPlatterViewController *)[self _viewControllerForAncestor];
-    if(![controller respondsToSelector:@selector(delegate)]) {
-  		%orig;
-  	} else {
-      if ([controller.delegate isKindOfClass:%c(CSMediaControlsViewController)]) {
-        %orig;
-        playerTimeControl = self;
-      } else {
-        %orig;
-      }
-    }
+  %orig;
+  MRPlatterViewController *controller = (MRPlatterViewController *)[self _viewControllerForAncestor];
+  if ([controller respondsToSelector:@selector(delegate)] && [controller.delegate isKindOfClass:%c(CSMediaControlsViewController)]) {
+    playerTimeControl = self;
+  }
 }
 %end
 
@@ -185,18 +179,12 @@ void loadprefs() {
 
 %hook MediaControlsVolumeSlider
 - (void)layoutSubviews {
+  %orig;
   MRPlatterViewController *controller = (MRPlatterViewController *)[self _viewControllerForAncestor];
-  if(![controller respondsToSelector:@selector(delegate)]) {
-		%orig;
-	} else {
-    if ([controller.delegate isKindOfClass:%c(CSMediaControlsViewController)]) {
-      %orig;
-      volumeSlider = self;
-      // Hide first, because it left an ugly blue circle on the lockscreen after respring
-      volumeSlider.hidden = YES;
-    } else {
-      %orig;
-    }
+  if ([controller respondsToSelector:@selector(delegate)] && [controller.delegate isKindOfClass:%c(CSMediaControlsViewController)]) {
+    volumeSlider = self;
+    // Hide first, because it left an ugly blue circle on the lockscreen after respring
+    volumeSlider.hidden = YES;
   }
 }
 
@@ -206,16 +194,11 @@ void loadprefs() {
 
 %hook MediaControlsTransportStackView
 - (void)layoutSubviews {
+	%orig;
   MRPlatterViewController *controller = (MRPlatterViewController *)[self _viewControllerForAncestor];
-  if(![controller respondsToSelector:@selector(delegate)]) {
-		%orig;
-	} else {
-    if ([controller.delegate isKindOfClass:%c(CSMediaControlsViewController)]) {
-      %orig;
-      mediaControls = self;
-    } else {
-      %orig;
-    }
+  if ([controller respondsToSelector:@selector(delegate)] && [controller.delegate isKindOfClass:%c(CSMediaControlsViewController)]) {
+    %orig;
+    mediaControls = self;
   }
 }
 
@@ -230,11 +213,7 @@ void loadprefs() {
 
 - (void)setFrame:(CGRect)frame {
   %orig;
-  if (isCurrentlyActive == YES) {
-    self.hidden = YES;
-  } else if (isCurrentlyActive == NO) {
-    self.hidden = NO;
-  }
+  self.hidden = isCurrentlyActive;
 }
 %end
 
@@ -263,14 +242,8 @@ void loadprefs() {
 	%orig;
 
 	MRPlatterViewController *controller = (MRPlatterViewController *)[self _viewControllerForAncestor];
-	if(![controller respondsToSelector:@selector(delegate)]) {
-		%orig;
-	} else {
-		if ([controller.delegate isKindOfClass:%c(CSMediaControlsViewController)]) {
-      self.hidden = YES;
-		} else {
-			%orig;
-		}
+	if ([controller respondsToSelector:@selector(delegate)] && [controller.delegate isKindOfClass:%c(CSMediaControlsViewController)]) {
+    self.hidden = YES;
 	}
 }
 %end
@@ -280,26 +253,18 @@ void loadprefs() {
 %hook SBUIProudLockIconView
 - (void)layoutSubviews {
   %orig;
-  if (isCurrentlyActive) {
-    self.hidden = YES;
-    self.alpha = 0;
-  } else {
-    self.hidden = NO;
-    self.alpha = 1;
-  }
+
+  self.hidden = isCurrentlyActive;
+  self.alpha = isCurrentlyActive ? 0.0 : 1.0;
 }
 %end
 
 %hook SBUIFaceIDCameraGlyphView
 - (void)layoutSubviews {
   %orig;
-  if (isCurrentlyActive) {
-    self.hidden = YES;
-    self.alpha = 0;
-  } else {
-    self.hidden = NO;
-    self.alpha = 1;
-  }
+
+  self.hidden = isCurrentlyActive;
+  self.alpha = isCurrentlyActive ? 0.0 : 1.0;
 }
 %end
 
@@ -326,11 +291,8 @@ void loadprefs() {
 %hook NCNotificationListView
 
 - (void)setFrame:(CGRect)frame {
-  if (isCurrentlyActive == YES) {
-    %orig(CGRectMake(frame.origin.x, frame.origin.y + 15, frame.size.width, frame.size.height));
-  } else if (isCurrentlyActive == NO) {
-    %orig;
-  }
+  frame.origin.y += isCurrentlyActive ? 15.0 : 0.0;
+  %orig(frame);
 }
 
 - (void)_scrollViewWillBeginDragging {
