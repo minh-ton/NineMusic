@@ -57,14 +57,11 @@
 @property (nonatomic,retain) UIView * backgroundView;
 @end
 
-@interface NCNotificationListView : UIScrollView
-@property (nonatomic, readwrite) BOOL _sf_isScrolledPastTop;
+@interface SBUIProudLockIconView : UIView
 @end
 
-@interface SBUIProudLockIconView: UIView
-@end
-
-@interface SBUIFaceIDCameraGlyphView: UIView
+@interface CSTeachableMomentsContainerView : UIView
+@property(nonatomic, strong, readwrite)UIView* controlCenterGrabberContainerView;
 @end
 
 @interface NCNotificationListStalenessEventTracker : NSObject

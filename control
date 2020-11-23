@@ -1,9 +1,10 @@
 Package: me.minhton.ninemusic
 Name: NineMusic
-Version: 1.0.0
+Version: 1.0.1
 Architecture: iphoneos-arm
 Description: iOS 9 Lockscreen Music Player!
 Author: MinhTon <ford.tonthat@gmail.com>
+Maintainer: MinhTon <ford.tonthat@gmail.com>
 Section: Tweaks
 Depends: mobilesubstrate, preferenceloader, firmware (>= 13.0)
 Conflicts: me.lightmann.vinyl, love.litten.lobelias, com.golddavid.colorflow5

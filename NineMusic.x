@@ -5,11 +5,11 @@ static CSMainPageView *mainPageView;
 static CSCoverSheetView *coverSheetView;
 static MediaControlsVolumeSlider *volumeSlider;
 static MediaControlsTransportStackView *mediaControls;
+static SBUIProudLockIconView* proudLockView;
 
 BOOL isCurrentlyActive = NO;
+BOOL isRoundLockScreenInstalled;
 BOOL enabled;
-
-CGFloat lastContentOffset;
 
 void loadprefs() {
   NSMutableDictionary const *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/me.minhton.ninemusicpref.plist"];
@@ -210,8 +210,7 @@ void loadprefs() {
 // Hide "No older notifications" text
 
 %hook NCNotificationListSectionRevealHintView
-
-- (void)setFrame:(CGRect)frame {
+- (void)didMoveToWindow {
   %orig;
   self.hidden = isCurrentlyActive;
 }
@@ -220,138 +219,111 @@ void loadprefs() {
 // Hide the ugly default music player
 
 %hook CSAdjunctItemView
--(void)_updateSizeToMimic {
+- (void)didMoveToWindow {
 	%orig;
-  // From _lightmann's Vinyl tweak https://github.com/UsrLightmann/Vinyl/
-  [self.heightAnchor constraintEqualToConstant:0].active = true;
-  self.hidden = YES;
-}
-%end
-
-%hook CSAdjunctListView
--(void)layoutSubviews {
-	%orig;
-  self.hidden = YES;
-}
-%end
-
-// Hide the default music name / artist / artwork
-
-%hook MediaControlsHeaderView
--(void)layoutSubviews{
-	%orig;
-
-	MRPlatterViewController *controller = (MRPlatterViewController *)[self _viewControllerForAncestor];
-	if ([controller respondsToSelector:@selector(delegate)] && [controller.delegate isKindOfClass:%c(CSMediaControlsViewController)]) {
-    self.hidden = YES;
-	}
+	[self setHidden:YES];
 }
 %end
 
 // Hide Face ID Lock
 
 %hook SBUIProudLockIconView
-- (void)layoutSubviews {
-  %orig;
-
-  self.hidden = isCurrentlyActive;
-  self.alpha = isCurrentlyActive ? 0.0 : 1.0;
+-(id)initWithFrame:(CGRect)arg1 {
+    id orig = %orig;
+    proudLockView = self;
+    return orig;
 }
 %end
 
-%hook SBUIFaceIDCameraGlyphView
+// Hide CC Grabber
+
+%hook CSTeachableMomentsContainerView
 - (void)layoutSubviews {
   %orig;
-
-  self.hidden = isCurrentlyActive;
-  self.alpha = isCurrentlyActive ? 0.0 : 1.0;
+  [[self controlCenterGrabberContainerView] setHidden:isCurrentlyActive];
 }
 %end
 
 // ----- HOW NOTIFICATIONS BEHAVE IN IOS 9? -------
 // ------------------------------------------------
 
-// Detect notifications => Hide / unhide the artwork
-// Doesn't work reliably
+// Positioning the notification scroll view
 
-%hook NCNotificationMasterList
-- (int)insertNotificationRequest:(id)arg1 {
-  mainPageView.artworkImageView.hidden = YES;
-  return %orig;
+%hook CSCombinedListViewController
+- (double)_minInsetsToPushDateOffScreen { // lower notifications while playing
+  if (!isCurrentlyActive) return %orig;
+  double orig = %orig;
+  return orig + (isCurrentlyActive ? 85.0 : 0.0);
 }
 
-- (int)removeNotificationRequest:(id)arg1 {
-  mainPageView.artworkImageView.hidden = NO;
-  return %orig;
+- (UIEdgeInsets)_listViewDefaultContentInsets { // lower notifications while playing
+  if (!isCurrentlyActive) return %orig;
+  UIEdgeInsets originalInsets = %orig;
+  originalInsets.top += isCurrentlyActive ? 85.0 : 0.0;
+  return originalInsets;
 }
 %end
 
-// Positioning the notification scroll view
-
 %hook NCNotificationListView
 
-- (void)setFrame:(CGRect)frame {
-  frame.origin.y += isCurrentlyActive ? 15.0 : 0.0;
-  %orig(frame);
+- (void)_scrollViewWillBeginDragging { // fade elements out when scrolling and notifications are presented
+	%orig;
+  if (!isCurrentlyActive) return;
+  [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+    [mainPageView.songTitleLabel setAlpha:0];
+    [mainPageView.artistTitleLabel setAlpha:0];
+    [mainPageView.artworkImageView setAlpha:0];
+    [volumeSlider setAlpha:0];
+    [mediaControls setAlpha:0];
+    [playerTimeControl setAlpha:0];
+    [volumeSlider setHidden:YES];
+  } completion:nil];
 }
 
-- (void)_scrollViewWillBeginDragging {
+- (void)_scrollViewDidEndDraggingWithDeceleration:(BOOL)arg1 { // fade elements in when stopped scrolling
 	%orig;
+  if (!isCurrentlyActive) return;
+  [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+    [mainPageView.songTitleLabel setAlpha:1];
+    [mainPageView.artistTitleLabel setAlpha:1];
+    [mainPageView.artworkImageView setAlpha:1];
+    [volumeSlider setAlpha:1];
+    [mediaControls setAlpha:1];
+    [playerTimeControl setAlpha:1];
+    [volumeSlider setHidden:NO];
+  } completion:nil];
+}
+%end
 
-  lastContentOffset = self.contentOffset.y;
+// RoundLockScreen Compatibility & Hide FaceID Lock
 
-  if (isCurrentlyActive == YES) {
-    [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-      [mainPageView.songTitleLabel setAlpha:0];
-      [mainPageView.artistTitleLabel setAlpha:0];
-      [volumeSlider setAlpha:0];
-      [mediaControls setAlpha:0];
-      [playerTimeControl setAlpha:0];
-      [volumeSlider setHidden:YES];
-    } completion:nil];
-  }
+%hook CSCoverSheetViewController
+- (void)viewWillAppear:(BOOL)animated { // roundlockscreen compatibility
+	%orig;
+  [proudLockView setHidden:isCurrentlyActive];
+  if (isRoundLockScreenInstalled) [[mainPageView epicBlurView] setClipsToBounds:YES];
+	if (isRoundLockScreenInstalled) [[[mainPageView epicBlurView] layer] setCornerRadius:38];
 }
 
-- (void)_scrollViewDidEndDraggingWithDeceleration:(BOOL)arg1 {
+- (void)viewWillDisappear:(BOOL)animated { // roundlockscreen compatibility
 	%orig;
+  [proudLockView setHidden:isCurrentlyActive];
+  if (isRoundLockScreenInstalled) [[mainPageView epicBlurView] setClipsToBounds:YES];
+	if (isRoundLockScreenInstalled) [[[mainPageView epicBlurView] layer] setCornerRadius:38];
+}
 
-  // Show/hide buttons upon notification list scroll (https://stackoverflow.com/a/56429397)
-  // Problem: Still hide buttons with no notifications
+- (void)viewDidAppear:(BOOL)animated { // roundlockscreen compatibility
+	%orig;
+  [proudLockView setHidden:isCurrentlyActive];
+  if (isRoundLockScreenInstalled) [[mainPageView epicBlurView] setClipsToBounds:YES];
+	if (isRoundLockScreenInstalled) [[[mainPageView epicBlurView] layer] setCornerRadius:0];
+}
+%end
 
-  if (lastContentOffset < self.contentOffset.y) {
-    if (isCurrentlyActive == YES) {
-      [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-        [mainPageView.songTitleLabel setAlpha:0];
-        [mainPageView.artistTitleLabel setAlpha:0];
-        [volumeSlider setAlpha:0];
-        [mediaControls setAlpha:0];
-        [playerTimeControl setAlpha:0];
-        [volumeSlider setHidden:YES];
-      } completion:nil];
-    }
-  } else if (lastContentOffset > self.contentOffset.y) {
-    if (isCurrentlyActive == YES) {
-      [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-        [mainPageView.songTitleLabel setAlpha:1];
-        [mainPageView.artistTitleLabel setAlpha:1];
-        [volumeSlider setAlpha:1];
-        [mediaControls setAlpha:1];
-        [playerTimeControl setAlpha:1];
-        [volumeSlider setHidden:NO];
-      } completion:nil];
-    }
-  } else if (lastContentOffset > self.contentOffset.y && self._sf_isScrolledPastTop == YES) {
-    if (isCurrentlyActive == YES) {
-      [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-        [mainPageView.songTitleLabel setAlpha:1];
-        [mainPageView.artistTitleLabel setAlpha:1];
-        [volumeSlider setAlpha:1];
-        [mediaControls setAlpha:1];
-        [playerTimeControl setAlpha:1];
-        [volumeSlider setHidden:NO];
-      } completion:nil];
-    }
-  }
+%hook SBBacklightController
+- (void)turnOnScreenFullyWithBacklightSource:(long long)arg1 {
+  %orig;
+  [proudLockView setHidden:isCurrentlyActive];
 }
 %end
 
@@ -360,7 +332,7 @@ void loadprefs() {
 
 %hook SBMediaController
 
-// From Litteeen's Lobelias tweak
+// From Litten's Lobelias tweak
 // https://github.com/Litteeen/Lobelias/
 
 - (void)setNowPlayingInfo:(id)arg1 {
@@ -440,6 +412,7 @@ static void displayStatusChanged(CFNotificationCenterRef center, void *observer,
 
   if (enabled) {
     // Show buttons after screen on if active
+    isRoundLockScreenInstalled = [[NSFileManager defaultManager] fileExistsAtPath:@"/Library/MobileSubstrate/DynamicLibraries/RoundLockScreen.dylib"];
     CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, displayStatusChanged, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
     %init(NineMusic);
   } else {
