@@ -219,9 +219,8 @@ void loadprefs() {
 // Hide the ugly default music player
 
 %hook CSAdjunctItemView
-- (void)didMoveToWindow {
-	%orig;
-	[self setHidden:YES];
+- (id)initWithFrame:(CGRect)frame {
+    return nil;
 }
 %end
 
