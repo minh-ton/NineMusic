@@ -1,14 +1,17 @@
-<img align="right" width="15%" src="https://minh-ton.github.io/assets/img/ninemusic.png">
-
 # NineMusic
-iOS 9 Now Playing Lockscreen Interface for iOS 13 & 14.
- 
-## Compatibility
-- Supports iOS 13.0 to 14.2
+This tweak brings back the iOS 9 Lockscreen Music Player to newer iOS versions.
+
+<img width=200 src="https://github.com/minh-ton/NineMusic/blob/master/img/ss1.png?raw=true"> <img width=200 src="https://github.com/minh-ton/NineMusic/blob/master/img/ss2.png?raw=true">
+
+I initially created NineMusic as a complement for my [NineUnlock](https://github.com/minh-ton/NineUnlock) tweak, to provide the full experience of the iOS 9 lockscreen by styling the lockscreen music player. It is no longer maintained and is now archived on GitHub.
+
+The release post for NineMusic can be found [here](https://www.reddit.com/r/jailbreak/comments/jly690/free_release_ninemusic_bring_back_the_ios_9/).
 
 ## Installation
-1. Add 'https://minh-ton.github.io/repo' to your package manager
-2. Search for NineMusic and install the tweak.
+You can download the latest deb package from [Releases](https://github.com/minh-ton/NineMusic/releases), or use [theos](https://github.com/theos/theos) to compile the tweak and install on your device.
 
-## Screenshots
-<img src="https://minh-ton.github.io/repo/depictions/me.minhton.ninemusic/screenshots/ss1.png" width="200"> <img src="https://minh-ton.github.io/repo/depictions/me.minhton.ninemusic/screenshots/ss2.png" width="200"> 
+## Compatibility
+NineMusic supports iOS versions from 13.0 to 14.2.
+
+## License
+This project is licensed under the MIT License.
